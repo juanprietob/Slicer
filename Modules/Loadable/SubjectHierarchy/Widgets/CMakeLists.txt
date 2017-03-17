@@ -15,17 +15,19 @@ if(Slicer_BUILD_CLI_SUPPORT)
 endif()
 
 set(${KIT}_SRCS
-  qMRMLSubjectHierarchyTreeView.cxx
-  qMRMLSubjectHierarchyTreeView.h
-  qSlicerSubjectHierarchyPluginLogic.cxx
-  qSlicerSubjectHierarchyPluginLogic.h
-  qMRMLSceneSubjectHierarchyModel.cxx
-  qMRMLSceneSubjectHierarchyModel.h
-  qMRMLSceneSubjectHierarchyModel_p.h
-  qMRMLSortFilterSubjectHierarchyProxyModel.cxx
-  qMRMLSortFilterSubjectHierarchyProxyModel.h
   qMRMLTransformItemDelegate.cxx
   qMRMLTransformItemDelegate.h
+  qMRMLSubjectHierarchyModel.cxx
+  qMRMLSubjectHierarchyModel.h
+  qMRMLSubjectHierarchyModel_p.h
+  qMRMLSortFilterSubjectHierarchyProxyModel.cxx
+  qMRMLSortFilterSubjectHierarchyProxyModel.h
+  qMRMLSubjectHierarchyTreeView.cxx
+  qMRMLSubjectHierarchyTreeView.h
+  qMRMLSubjectHierarchyComboBox.cxx
+  qMRMLSubjectHierarchyComboBox.h
+  qSlicerSubjectHierarchyPluginLogic.cxx
+  qSlicerSubjectHierarchyPluginLogic.h
   qSlicerSubjectHierarchyAbstractPlugin.cxx
   qSlicerSubjectHierarchyAbstractPlugin.h
   qSlicerSubjectHierarchyPluginHandler.cxx
@@ -42,18 +44,12 @@ set(${KIT}_SRCS
   qSlicerSubjectHierarchyParseLocalDataPlugin.h
   qSlicerSubjectHierarchyRegisterPlugin.cxx
   qSlicerSubjectHierarchyRegisterPlugin.h
-  qSlicerSubjectHierarchySegmentPlugin.cxx
-  qSlicerSubjectHierarchySegmentPlugin.h
   qSlicerSubjectHierarchyFolderPlugin.cxx
   qSlicerSubjectHierarchyFolderPlugin.h
   )
 
 set(${KIT}_MOC_SRCS
-  qMRMLSubjectHierarchyTreeView.h
   qSlicerSubjectHierarchyPluginLogic.h
-  qMRMLSceneSubjectHierarchyModel.h
-  qMRMLSortFilterSubjectHierarchyProxyModel.h
-  qMRMLTransformItemDelegate.h
   qSlicerSubjectHierarchyAbstractPlugin.h
   qSlicerSubjectHierarchyPluginHandler.h
   qSlicerSubjectHierarchyDefaultPlugin.h
@@ -62,8 +58,12 @@ set(${KIT}_MOC_SRCS
   qSlicerSubjectHierarchyChartsPlugin.h
   qSlicerSubjectHierarchyParseLocalDataPlugin.h
   qSlicerSubjectHierarchyRegisterPlugin.h
-  qSlicerSubjectHierarchySegmentPlugin.h
   qSlicerSubjectHierarchyFolderPlugin.h
+  qMRMLTransformItemDelegate.h
+  qMRMLSubjectHierarchyTreeView.h
+  qMRMLSubjectHierarchyComboBox.h
+  qMRMLSubjectHierarchyModel.h
+  qMRMLSortFilterSubjectHierarchyProxyModel.h
   )
 
 set(${KIT}_UI_SRCS

@@ -156,6 +156,8 @@ void qSlicerSegmentEditorAbstractEffect::activate()
 {
   Q_D(qSlicerSegmentEditorAbstractEffect);
 
+  this->updateGUIFromMRML();
+
   // Show options frame
   d->OptionsFrame->setVisible(true);
 
@@ -533,8 +535,6 @@ void qSlicerSegmentEditorAbstractEffect::cursorOn(qMRMLWidget* viewWidget)
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::addActor3D(qMRMLWidget* viewWidget, vtkProp3D* actor)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
-
   vtkRenderer* renderer = qSlicerSegmentEditorAbstractEffect::renderer(viewWidget);
   if (renderer)
     {
@@ -550,8 +550,6 @@ void qSlicerSegmentEditorAbstractEffect::addActor3D(qMRMLWidget* viewWidget, vtk
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::addActor2D(qMRMLWidget* viewWidget, vtkActor2D* actor)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
-
   vtkRenderer* renderer = qSlicerSegmentEditorAbstractEffect::renderer(viewWidget);
   if (renderer)
     {
@@ -567,8 +565,6 @@ void qSlicerSegmentEditorAbstractEffect::addActor2D(qMRMLWidget* viewWidget, vtk
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::removeActor3D(qMRMLWidget* viewWidget, vtkProp3D* actor)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
-
   vtkRenderer* renderer = qSlicerSegmentEditorAbstractEffect::renderer(viewWidget);
   if (renderer)
     {
@@ -584,8 +580,6 @@ void qSlicerSegmentEditorAbstractEffect::removeActor3D(qMRMLWidget* viewWidget, 
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::removeActor2D(qMRMLWidget* viewWidget, vtkActor2D* actor)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
-
   vtkRenderer* renderer = qSlicerSegmentEditorAbstractEffect::renderer(viewWidget);
   if (renderer)
     {
@@ -596,7 +590,6 @@ void qSlicerSegmentEditorAbstractEffect::removeActor2D(qMRMLWidget* viewWidget, 
     {
     qCritical() << Q_FUNC_INFO << ": Failed to get renderer for view widget";
     }
-
 }
 
 //-----------------------------------------------------------------------------
@@ -628,7 +621,6 @@ void qSlicerSegmentEditorAbstractEffect::addOptionsWidget(QWidget* newOptionsWid
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::addOptionsWidget(QLayout* newOptionsWidget)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   this->optionsLayout()->addRow(newOptionsWidget);
 }
 
@@ -646,7 +638,6 @@ QWidget* qSlicerSegmentEditorAbstractEffect::addLabeledOptionsWidget(QString lab
 //-----------------------------------------------------------------------------
 QWidget* qSlicerSegmentEditorAbstractEffect::addLabeledOptionsWidget(QString label, QLayout* newOptionsWidget)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   QLabel* labelWidget = new QLabel(label);
   if (dynamic_cast<QHBoxLayout*>(newOptionsWidget) == NULL)
     {
@@ -791,7 +782,6 @@ bool qSlicerSegmentEditorAbstractEffect::commonParameterDefined(QString name)
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::setParameterDefault(QString name, QString value)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   if (this->parameterDefined(name))
     {
     return;
@@ -840,7 +830,6 @@ void qSlicerSegmentEditorAbstractEffect::setCommonParameter(QString name, QStrin
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::setCommonParameterDefault(QString name, QString value)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   if (this->commonParameterDefined(name))
     {
     return;
@@ -857,7 +846,6 @@ void qSlicerSegmentEditorAbstractEffect::setParameter(QString name, int value)
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::setParameterDefault(QString name, int value)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   if (this->parameterDefined(name))
     {
     return;
@@ -874,7 +862,6 @@ void qSlicerSegmentEditorAbstractEffect::setCommonParameter(QString name, int va
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::setCommonParameterDefault(QString name, int value)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   if (this->commonParameterDefined(name))
     {
     return;
@@ -891,7 +878,6 @@ void qSlicerSegmentEditorAbstractEffect::setParameter(QString name, double value
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::setParameterDefault(QString name, double value)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   if (this->parameterDefined(name))
     {
     return;
@@ -908,7 +894,6 @@ void qSlicerSegmentEditorAbstractEffect::setCommonParameter(QString name, double
 //-----------------------------------------------------------------------------
 void qSlicerSegmentEditorAbstractEffect::setCommonParameterDefault(QString name, double value)
 {
-  Q_D(qSlicerSegmentEditorAbstractEffect);
   if (this->commonParameterDefined(name))
     {
     return;

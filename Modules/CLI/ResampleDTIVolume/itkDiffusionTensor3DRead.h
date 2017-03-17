@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DRead_h
-#define __itkDiffusionTensor3DRead_h
+#ifndef itkDiffusionTensor3DRead_h
+#define itkDiffusionTensor3DRead_h
 
 #include <itkObject.h>
 #include <itkMetaDataObject.h>
@@ -65,13 +65,15 @@ public:
 
   // /Set Number Of Threads
   itkSetMacro( NumberOfThreads, unsigned int);
-  itkGetMacro( HasMeasurementFrame , bool ) ;
+  itkGetMacro( HasMeasurementFrame , bool );
 private:
   DiffusionTensor3DRead();
+
   typename FileReaderType::Pointer m_Reader;
+
   MatrixType   m_MeasurementFrame;
   unsigned int m_NumberOfThreads;
-  bool m_HasMeasurementFrame ;
+  bool         m_HasMeasurementFrame;
 };
 
 } // end namespace itk

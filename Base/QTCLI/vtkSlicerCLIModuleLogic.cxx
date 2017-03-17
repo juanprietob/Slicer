@@ -265,19 +265,20 @@ public:
                        void * vtkNotUsed(callData))
   {
     vtkMRMLNode *nd = this->CLIModuleLogic->GetMRMLScene()->GetNodeByID(this->ReferenceNodeID.c_str());
-    vtkMRMLSubjectHierarchyNode *shnd = vtkMRMLSubjectHierarchyNode::GetAssociatedSubjectHierarchyNode(nd);
+    vtkMRMLNode *ond = this->CLIModuleLogic->GetMRMLScene()->GetNodeByID(this->OutputNodeID.c_str());
+    vtkMRMLSubjectHierarchyNode *shnd = vtkMRMLSubjectHierarchyNode::GetSubjectHierarchyNode(this->CLIModuleLogic->GetMRMLScene());
+    vtkIdType shItemID = shnd->GetItemByDataNode(nd);
+    vtkIdType outShItemID = shnd->GetItemByDataNode(ond);
 
-    if (shnd)
+    if (!shItemID || !outShItemID)
     {
-      vtkMRMLNode *ond = this->CLIModuleLogic->GetMRMLScene()->GetNodeByID(this->OutputNodeID.c_str());
-      vtkMRMLSubjectHierarchyNode* pnd = vtkMRMLSubjectHierarchyNode::SafeDownCast(shnd->GetParentNode());
-
-      // This function call only creates a new subject hierarchy node if it does not yet exist (i.e.
-      // AutoCreateSubjectHierarchy in qSlicerSubjectHierarchyPluginLogic is off, then nodes need to
-      // be explicitly created). Otherwise change properties, in this case the parent.
-      vtkMRMLSubjectHierarchyNode::CreateSubjectHierarchyNode(
-        this->CLIModuleLogic->GetMRMLScene(), pnd, shnd->GetLevel(), ond->GetName(), ond);
+      vtkGenericWarningMacro("CLI: No subject hierarchy item found for input node " << nd->GetName() << " or output node " << ond->GetName());
+      return;
     }
+
+    vtkIdType parentItemID = shnd->GetItemParent(shItemID);
+    shnd->SetItemParent(outShItemID, parentItemID);
+    shnd->SetItemLevel(outShItemID, shnd->GetItemLevel(shItemID));
   }
 
   void SetCLIModuleLogic(vtkSlicerCLIModuleLogic* logic)

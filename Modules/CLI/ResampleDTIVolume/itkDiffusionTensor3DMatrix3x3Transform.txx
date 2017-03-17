@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DMatrix3x3Transform_txx
-#define __itkDiffusionTensor3DMatrix3x3Transform_txx
+#ifndef itkDiffusionTensor3DMatrix3x3Transform_txx
+#define itkDiffusionTensor3DMatrix3x3Transform_txx
 
 #include "itkDiffusionTensor3DMatrix3x3Transform.h"
 
@@ -27,7 +27,7 @@ DiffusionTensor3DMatrix3x3Transform<TData>
   m_Transform.SetIdentity();
   m_TransformT.SetIdentity();
   m_Lock = MutexLock::New();
-  latestTime = 0;
+  m_LatestTime = 0;
   m_Translation.Fill( NumericTraits<DataType>::ZeroValue() );
   m_Offset.Fill( NumericTraits<DataType>::ZeroValue() );
   m_Center.Fill( NumericTraits<DataType>::ZeroValue() );
@@ -80,10 +80,10 @@ typename DiffusionTensor3DMatrix3x3Transform<TData>::PointType
 DiffusionTensor3DMatrix3x3Transform<TData>
 ::EvaluateTensorPosition( const PointType & point )
 {
-  if( latestTime < Object::GetMTime() )
+  if( m_LatestTime < Object::GetMTime() )
     {
     m_Lock->Lock();
-    if( latestTime < Object::GetMTime() )
+    if( m_LatestTime < Object::GetMTime() )
       {
       PreCompute();
       }
@@ -107,10 +107,10 @@ DiffusionTensor3DMatrix3x3Transform<TData>
 {
   InternalTensorDataType internalTensor = tensor;
 
-  if( latestTime < Object::GetMTime() )
+  if( m_LatestTime < Object::GetMTime() )
     {
     m_Lock->Lock();
-    if( latestTime < Object::GetMTime() )
+    if( m_LatestTime < Object::GetMTime() )
       {
       PreCompute();
       }
@@ -130,10 +130,10 @@ typename DiffusionTensor3DMatrix3x3Transform<TData>::
 InternalMatrixTransformType
 DiffusionTensor3DMatrix3x3Transform<TData>::GetMatrix3x3()
 {
-  if( latestTime < Object::GetMTime() )
+  if( m_LatestTime < Object::GetMTime() )
     {
     m_Lock->Lock();
-    if( latestTime < Object::GetMTime() )
+    if( m_LatestTime < Object::GetMTime() )
       {
       PreCompute();
       }
@@ -147,10 +147,10 @@ typename DiffusionTensor3DMatrix3x3Transform<TData>::
 VectorType
 DiffusionTensor3DMatrix3x3Transform<TData>::GetTranslation()
 {
-  if( latestTime < Object::GetMTime() )
+  if( m_LatestTime < Object::GetMTime() )
     {
     m_Lock->Lock();
-    if( latestTime < Object::GetMTime() )
+    if( m_LatestTime < Object::GetMTime() )
       {
       PreCompute();
       }

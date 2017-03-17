@@ -23,27 +23,85 @@
 #ifndef __qMRMLSortFilterSubjectHierarchyProxyModel_h
 #define __qMRMLSortFilterSubjectHierarchyProxyModel_h
 
-// SubjectHierarchy Widgets includes
+// SubjectHierarchy includes
 #include "qSlicerSubjectHierarchyModuleWidgetsExport.h"
 
-// MRMLWidgets includes
-#include "qMRMLSortFilterProxyModel.h"
+// Qt includes
+#include <QSortFilterProxyModel>
+
+// CTK includes
+#include <ctkVTKObject.h>
+#include <ctkPimpl.h>
 
 class qMRMLSortFilterSubjectHierarchyProxyModelPrivate;
+class vtkMRMLSubjectHierarchyNode;
+class vtkMRMLScene;
+class QStandardItem;
 
 /// \ingroup Slicer_QtModules_SubjectHierarchy
-class Q_SLICER_MODULE_SUBJECTHIERARCHY_WIDGETS_EXPORT qMRMLSortFilterSubjectHierarchyProxyModel
-  : public qMRMLSortFilterProxyModel
+class Q_SLICER_MODULE_SUBJECTHIERARCHY_WIDGETS_EXPORT qMRMLSortFilterSubjectHierarchyProxyModel : public QSortFilterProxyModel
 {
   Q_OBJECT
+  QVTK_OBJECT
+
+  /// Filter to show only items that contain the string in their names. Empty by default
+  Q_PROPERTY(QString nameFilter READ nameFilter WRITE setNameFilter)
+  /// Filter to show only items that contain an attribute with this name. Empty by default
+  Q_PROPERTY(QString attributeNameFilter READ attributeNameFilter WRITE setAttributeNameFilter)
+  /// Filter to show only items that contain an attribute with \sa attributeNameFilter (must be set)
+  /// with this value. If empty, then existence of the attribute is enough to show
+  /// Exact match is required. Empty by default
+  Q_PROPERTY(QString attributeValueFilter READ attributeValueFilter WRITE setAttributeValueFilter)
+  /// This property controls whether items unaffiliated with a given subject hierarchy item are hidden or not.
+  /// All the nodes are visible (invalid item ID - vtkMRMLSubjectHierarchyNode::INVALID_ITEM_ID) by default
+  Q_PROPERTY(vtkIdType hideItemsUnaffiliatedWithItemID READ hideItemsUnaffiliatedWithItemID WRITE setHideItemsUnaffiliatedWithItemID)
+  /// Filter to show only items of a certain level (and their parents). If empty, then show all
+  /// Exact match is required. Empty by default
+  Q_PROPERTY(QString levelFilter READ levelFilter WRITE setLevelFilter)
+
 public:
-  typedef qMRMLSortFilterProxyModel Superclass;
+  typedef QSortFilterProxyModel Superclass;
   qMRMLSortFilterSubjectHierarchyProxyModel(QObject *parent=0);
   virtual ~qMRMLSortFilterSubjectHierarchyProxyModel();
 
+  Q_INVOKABLE vtkMRMLSubjectHierarchyNode* subjectHierarchyNode()const;
+  Q_INVOKABLE vtkMRMLScene* mrmlScene()const;
+
+  QString nameFilter()const;
+  void setNameFilter(QString filter);
+  QString attributeNameFilter()const;
+  void setAttributeNameFilter(QString filter);
+  QString attributeValueFilter()const;
+  void setAttributeValueFilter(QString filter);
+  QString levelFilter()const;
+  void setLevelFilter(QString filter);
+
+  vtkIdType hideItemsUnaffiliatedWithItemID();
+  void setHideItemsUnaffiliatedWithItemID(vtkIdType itemID);
+
+  /// Retrieve the index of the MRML scene (the root item) in the subject hierarchy tree
+  Q_INVOKABLE QModelIndex subjectHierarchySceneIndex()const;
+
+  /// Retrieve the associated subject hierarchy item ID from a model index
+  Q_INVOKABLE vtkIdType subjectHierarchyItemFromIndex(const QModelIndex& index)const;
+
+  /// Retrieve an index for a given a subject hierarchy item ID
+  Q_INVOKABLE QModelIndex indexFromSubjectHierarchyItem(vtkIdType itemID, int column=0)const;
+
+  /// Determine the number of accepted (shown) items
+  /// \param rootItemID Ancestor item of branch in which the accepted items are counted
+  Q_INVOKABLE int acceptedItemCount(vtkIdType rootItemID)const;
+
 protected:
-  /// Filters nodes to decide which to display in the view
-  virtual AcceptType filterAcceptsNode(vtkMRMLNode* node)const;
+  /// Returns true if the item in the row indicated by the given sourceRow and
+  /// sourceParent should be included in the model; otherwise returns false.
+  /// This method test each item via \a filterAcceptsItem
+  virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent)const;
+
+  /// Filters items to decide which to display in the view
+  virtual bool filterAcceptsItem(vtkIdType itemID)const;
+
+  QStandardItem* sourceItem(const QModelIndex& index)const;
 
 protected:
   QScopedPointer<qMRMLSortFilterSubjectHierarchyProxyModelPrivate> d_ptr;

@@ -95,7 +95,6 @@ void qSlicerSimpleMarkupsWidgetPrivate::setupUi(qSlicerSimpleMarkupsWidget* widg
 //-----------------------------------------------------------------------------
 qSlicerSimpleMarkupsWidget::qSlicerSimpleMarkupsWidget(QWidget* parentWidget) : Superclass( parentWidget ) , d_ptr( new qSlicerSimpleMarkupsWidgetPrivate(*this) )
 {
-  Q_D(qSlicerSimpleMarkupsWidget);
   this->setup();
 }
 
@@ -593,8 +592,7 @@ void qSlicerSimpleMarkupsWidget::updateWidget()
 //------------------------------------------------------------------------------
 void qSlicerSimpleMarkupsWidget::setMRMLScene(vtkMRMLScene* scene)
 {
-  Q_D(qSlicerSimpleMarkupsWidget);
-  Superclass::setMRMLScene(scene);
+  this->Superclass::setMRMLScene(scene);
   this->updateWidget();
 }
 

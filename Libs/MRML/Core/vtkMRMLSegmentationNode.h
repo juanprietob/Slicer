@@ -45,7 +45,7 @@ class vtkMRMLScalarVolumeNode;
 /// closed surface mesh, fractional labelmap image, etc). Segments can be stored in multiple data
 /// representations to facilitate visualization and processing.
 ///
-/// Storage and automatic conversion between representations are providedby \sa vtkSegmentation object.
+/// Storage and automatic conversion between representations are provided by \sa vtkSegmentation object.
 ///
 class VTK_MRML_EXPORT vtkMRMLSegmentationNode : public vtkMRMLDisplayableNode
 {
@@ -109,11 +109,15 @@ public:
   /// its geometry will be set as image geometry conversion parameter.
   /// The "other order", i.e. when the volume is loaded first and the segmentation second,
   /// should be handled at loading time of the segmentation (because then we already know about the volume)
-  /// \param shNodeWithNewUID Subject hierarchy node that just got a new UID
-  virtual void OnSubjectHierarchyUIDAdded(vtkMRMLSubjectHierarchyNode* shNodeWithNewUID);
+  /// \param shNode Subject hierarchy node that contains the item (should be the only SH node in the scene)
+  /// \param itemWithNewUID ID of subject hierarchy item that just got a new UID
+  virtual void OnSubjectHierarchyUIDAdded(vtkMRMLSubjectHierarchyNode* shNode, vtkIdType itemWithNewUID);
 
-  /// Get subject hierarchy node belonging to a certain segment
-  virtual vtkMRMLSubjectHierarchyNode* GetSegmentSubjectHierarchyNode(std::string segmentID);
+  /// Get subject hierarchy item belonging to a certain segment
+  /// \param segmentID ID of segment contained by this segmentation to get the subject hierarchy virtual item for
+  /// \param shNode Subject hierarchy node to search in (there should be only one in the scene and it can be got
+  ///   using vtkMRMLSubjectHierarchyNode::GetSubjectHierarchyNode)
+  virtual vtkIdType GetSegmentSubjectHierarchyItem(std::string segmentID, vtkMRMLSubjectHierarchyNode* shNode);
 
 #ifndef __VTK_WRAP__
 //BTX

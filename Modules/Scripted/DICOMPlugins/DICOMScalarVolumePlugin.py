@@ -304,7 +304,7 @@ class DICOMScalarVolumePluginClass(DICOMPlugin):
 
     if volumeNode:
       #
-      # create Subject Hierarchy nodes for the loaded series
+      # create subject hierarchy items for the loaded series
       #
       self.addSeriesInSubjectHierarchy(loadable,volumeNode)
 
@@ -350,20 +350,22 @@ class DICOMScalarVolumePluginClass(DICOMPlugin):
 
     return volumeNode
 
-  def examineForExport(self,node):
+  def examineForExport(self,subjectHierarchyItemID):
     """Return a list of DICOMExportable instances that describe the
     available techniques that this plugin offers to convert MRML
     data into DICOM data
     """
     # cannot export if there is no data node or the data node is not a volume
-    if node.GetAssociatedNode() is None or not node.GetAssociatedNode().IsA('vtkMRMLScalarVolumeNode'):
+    shn = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+    dataNode = shn.GetItemDataNode(subjectHierarchyItemID)
+    if dataNode is None or not dataNode.IsA('vtkMRMLScalarVolumeNode'):
       return []
 
     # Define basic properties of the exportable
     exportable = slicer.qSlicerDICOMExportable()
     exportable.name = self.loadType
     exportable.tooltip = "Creates a series of DICOM files from scalar volumes"
-    exportable.nodeID = node.GetID()
+    exportable.subjectHierarchyItemID = subjectHierarchyItemID
     exportable.pluginClass = self.__module__
     exportable.confidence = 0.5 # There could be more specialized volume types
 
@@ -378,31 +380,37 @@ class DICOMScalarVolumePluginClass(DICOMPlugin):
 
   def export(self,exportables):
     for exportable in exportables:
-      # Get node to export
-      node = slicer.mrmlScene.GetNodeByID(exportable.nodeID)
-      if node.GetAssociatedNode() is None or not node.GetAssociatedNode().IsA('vtkMRMLScalarVolumeNode'):
-        error = "Series '" + node.GetNameWithoutPostfix() + "' cannot be exported!"
+      # Get volume node to export
+      shNode = slicer.vtkMRMLSubjectHierarchyNode.GetSubjectHierarchyNode(slicer.mrmlScene)
+      if shNode is None:
+        error = "Invalid subject hierarchy"
+        logging.error(error)
+        return error
+      volumeNode = shNode.GetItemDataNode(exportable.subjectHierarchyItemID)
+      if volumeNode is None or not volumeNode.IsA('vtkMRMLScalarVolumeNode'):
+        error = "Series '" + shNode.GetItemName(exportable.subjectHierarchyItemID) + "' cannot be exported"
         logging.error(error)
         return error
 
       # Get output directory and create a subdirectory. This is necessary
       # to avoid overwriting the files in case of multiple exportables, as
       # naming of the DICOM files is static
+      directoryName = 'ScalarVolume_' + str(exportable.subjectHierarchyItemID)
       directoryDir = qt.QDir(exportable.directory)
-      directoryDir.mkdir(exportable.nodeID)
-      directoryDir.cd(exportable.nodeID)
+      directoryDir.mkdir(directoryName)
+      directoryDir.cd(directoryName)
       directory = directoryDir.absolutePath()
-      logging.info("Export scalar volume '" + node.GetAssociatedNode().GetName() + "' to directory " + directory)
+      logging.info("Export scalar volume '" + volumeNode.GetName() + "' to directory " + directory)
 
-      # Get study and patient nodes
-      studyNode = node.GetParentNode()
-      if studyNode is None:
-        error = "Unable to get study node for series '" + node.GetAssociatedNode().GetName() + "'"
+      # Get study and patient items
+      studyItemID = shNode.GetItemParent(exportable.subjectHierarchyItemID)
+      if not studyItemID:
+        error = "Unable to get study for series '" + volumeNode.GetName() + "'"
         logging.error(error)
         return error
-      patientNode = studyNode.GetParentNode()
-      if patientNode is None:
-        error = "Unable to get patient node for series '" + node.GetAssociatedNode().GetName() + "'"
+      patientItemID = shNode.GetItemParent(studyItemID)
+      if not patientItemID:
+        error = "Unable to get patient for series '" + volumeNode.GetName() + "'"
         logging.error(error)
         return error
 
@@ -422,13 +430,13 @@ class DICOMScalarVolumePluginClass(DICOMPlugin):
 
       # Validate tags
       if tags['Modality'] == "":
-        error = "Empty modality for series '" + node.GetAssociatedNode().GetName() + "'"
+        error = "Empty modality for series '" + volumeNode.GetName() + "'"
         logging.error(error)
         return error
       #TODO: more tag checks
 
       # Perform export
-      exporter = DICOMExportScalarVolume(tags['Study ID'], node.GetAssociatedNode(), tags, directory)
+      exporter = DICOMExportScalarVolume(tags['Study ID'], volumeNode, tags, directory)
       exporter.export()
 
     # Success

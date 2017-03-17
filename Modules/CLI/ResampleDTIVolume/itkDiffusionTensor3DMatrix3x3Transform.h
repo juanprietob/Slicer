@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DMatrix3x3Transform_h
-#define __itkDiffusionTensor3DMatrix3x3Transform_h
+#ifndef itkDiffusionTensor3DMatrix3x3Transform_h
+#define itkDiffusionTensor3DMatrix3x3Transform_h
 
 #include "itkDiffusionTensor3DTransform.h"
 #include <itkVector.h>
@@ -92,7 +92,7 @@ protected:
   InternalMatrixTransformType m_TransformMatrix;
   InternalMatrixTransformType m_Transform;
   InternalMatrixTransformType m_TransformT;
-  unsigned long               latestTime;
+  unsigned long               m_LatestTime;
   VectorType                  m_Translation;
   VectorType                  m_Offset;
   PointType                   m_Center;

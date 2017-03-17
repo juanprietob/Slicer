@@ -20,6 +20,7 @@ Version:   $Revision: 1.11 $
 #include <vtkCallbackCommand.h>
 #include <vtkNew.h>
 #include <vtkObjectFactory.h>
+#include <vtkStringArray.h>
 
 // VTKSYS includes
 #include <vtksys/SystemTools.hxx>
@@ -305,6 +306,8 @@ void vtkMRMLNode::PrintSelf(ostream& os, vtkIndent indent)
 {
   os << indent << "ID: " <<
     (this->ID ? this->ID : "(none)") << "\n";
+  os << indent << "Class: " <<
+    (this->GetClassName() ? this->GetClassName() : "(none)") << "\n";
 
   // vtkObject's PrintSelf prints a long list of registered events, which
   // is too long and not useful, therefore we don't call vtkObject::PrintSelf
@@ -912,6 +915,21 @@ std::vector< std::string > vtkMRMLNode::GetAttributeNames()
     attributeNamesVector.push_back(iter->first);
     }
   return attributeNamesVector;
+}
+
+//----------------------------------------------------------------------------
+void vtkMRMLNode::GetAttributeNames(vtkStringArray* attributeNames)
+{
+  if (attributeNames == NULL)
+    {
+    vtkErrorMacro("vtkMRMLNode::GetAttributeNames: attributeNames is invalid");
+    return;
+    }
+  attributeNames->Reset();
+  for (AttributesType::iterator iter = this->Attributes.begin(); iter != this->Attributes.end(); ++iter)
+    {
+    attributeNames->InsertNextValue(iter->first);
+    }
 }
 
 //----------------------------------------------------------------------------

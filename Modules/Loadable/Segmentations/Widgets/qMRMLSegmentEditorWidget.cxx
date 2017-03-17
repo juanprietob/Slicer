@@ -88,7 +88,7 @@
 #include <ctkFlowLayout.h>
 
 static const int BINARY_LABELMAP_SCALAR_TYPE = VTK_UNSIGNED_CHAR;
-static const unsigned char BINARY_LABELMAP_VOXEL_FULL = 1;
+// static const unsigned char BINARY_LABELMAP_VOXEL_FULL = 1; // unused
 static const unsigned char BINARY_LABELMAP_VOXEL_EMPTY = 0;
 
 static const char NULL_EFFECT_NAME[] = "NULL";
@@ -493,8 +493,6 @@ void qMRMLSegmentEditorWidgetPrivate::notifyEffectsOfLayoutChange()
 //-----------------------------------------------------------------------------
 bool qMRMLSegmentEditorWidgetPrivate::resetModifierLabelmapToDefault()
 {
-  Q_Q(qMRMLSegmentEditorWidget);
-
   std::string referenceImageGeometry = this->referenceImageGeometry();
   if (referenceImageGeometry.empty())
     {
@@ -518,7 +516,6 @@ bool qMRMLSegmentEditorWidgetPrivate::resetModifierLabelmapToDefault()
 //-----------------------------------------------------------------------------
 bool qMRMLSegmentEditorWidgetPrivate::updateSelectedSegmentLabelmap()
 {
-  Q_Q(qMRMLSegmentEditorWidget);
   if (!this->ParameterSetNode)
     {
     qCritical() << Q_FUNC_INFO << ": Invalid segment editor parameter set node";
@@ -571,7 +568,6 @@ bool qMRMLSegmentEditorWidgetPrivate::updateSelectedSegmentLabelmap()
 //-----------------------------------------------------------------------------
 bool qMRMLSegmentEditorWidgetPrivate::updateAlignedMasterVolume()
 {
-  Q_Q(qMRMLSegmentEditorWidget);
   if (!this->ParameterSetNode)
     {
     qCritical() << Q_FUNC_INFO << ": Invalid segment editor parameter set node";
@@ -646,8 +642,6 @@ bool qMRMLSegmentEditorWidgetPrivate::updateAlignedMasterVolume()
 //-----------------------------------------------------------------------------
 bool qMRMLSegmentEditorWidgetPrivate::updateMaskLabelmap()
 {
-  Q_Q(qMRMLSegmentEditorWidget);
-
   if (!this->ParameterSetNode)
     {
     qCritical() << Q_FUNC_INFO << ": Invalid segment editor parameter set node";
@@ -770,7 +764,6 @@ bool qMRMLSegmentEditorWidgetPrivate::updateMaskLabelmap()
 //-----------------------------------------------------------------------------
 bool qMRMLSegmentEditorWidgetPrivate::updateReferenceGeometryImage()
 {
-  Q_Q(qMRMLSegmentEditorWidget);
   std::string geometry = this->referenceImageGeometry();
   if (geometry.empty())
     {
@@ -1208,7 +1201,6 @@ std::string qMRMLSegmentEditorWidgetPrivate::getReferenceImageGeometryFromSegmen
 //-----------------------------------------------------------------------------
 std::string qMRMLSegmentEditorWidgetPrivate::referenceImageGeometry()
 {
-  Q_Q(qMRMLSegmentEditorWidget);
   if (!this->ParameterSetNode)
     {
     qCritical() << Q_FUNC_INFO << ": Invalid segment editor parameter set node";
@@ -1415,8 +1407,6 @@ void qMRMLSegmentEditorWidget::updateWidgetFromEffect()
 //-----------------------------------------------------------------------------
 void qMRMLSegmentEditorWidget::setMRMLScene(vtkMRMLScene* newScene)
 {
-  Q_D(qMRMLSegmentEditorWidget);
-
   if (newScene == this->mrmlScene())
     {
     return;
@@ -1702,8 +1692,6 @@ void qMRMLSegmentEditorWidget::onMasterVolumeNodeChanged(vtkMRMLNode* node)
 //-----------------------------------------------------------------------------
 void qMRMLSegmentEditorWidget::onEffectButtonClicked(QAbstractButton* button)
 {
-  Q_D(qMRMLSegmentEditorWidget);
-
   // Get effect that was just clicked
   qSlicerSegmentEditorAbstractEffect* clickedEffect = qobject_cast<qSlicerSegmentEditorAbstractEffect*>(
     button->property("Effect").value<QObject*>() );
@@ -2461,7 +2449,6 @@ void qMRMLSegmentEditorWidget::uninstallKeyboardShortcuts()
 //-----------------------------------------------------------------------------
 void qMRMLSegmentEditorWidget::onSelectEffectShortcut()
 {
-  Q_D(qMRMLSegmentEditorWidget);
   QShortcut* shortcut = qobject_cast<QShortcut*>(sender());
   if (shortcut == NULL)
     {
@@ -2481,7 +2468,6 @@ void qMRMLSegmentEditorWidget::onSelectEffectShortcut()
 //-----------------------------------------------------------------------------
 void qMRMLSegmentEditorWidget::onSelectSegmentShortcut()
 {
-  Q_D(qMRMLSegmentEditorWidget);
   QShortcut* shortcut = qobject_cast<QShortcut*>(sender());
   if (shortcut == NULL)
     {
@@ -2502,7 +2488,7 @@ void qMRMLSegmentEditorWidget::onSelectSegmentShortcut()
   std::vector<std::string> segmentIDs;
   displayNode->GetVisibleSegmentIDs(segmentIDs);
   QString currentSegmentID = this->currentSegmentID();
-  for (int segmentIndex = 0; segmentIndex < segmentIDs.size(); segmentIndex++)
+  for (unsigned int segmentIndex = 0; segmentIndex < segmentIDs.size(); segmentIndex++)
     {
     std::string segmentID = segmentIDs[segmentIndex];
     if (currentSegmentID == segmentID.c_str())
@@ -2518,7 +2504,6 @@ void qMRMLSegmentEditorWidget::onSelectSegmentShortcut()
 //---------------------------------------------------------------------------
 bool qMRMLSegmentEditorWidget::turnOffLightboxes()
 {
-  Q_D(qMRMLSegmentEditorWidget);
   qSlicerLayoutManager* layoutManager = qSlicerApplication::application()->layoutManager();
   if (!layoutManager)
     {

@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DRigidTransform_txx
-#define __itkDiffusionTensor3DRigidTransform_txx
+#ifndef itkDiffusionTensor3DRigidTransform_txx
+#define itkDiffusionTensor3DRigidTransform_txx
 
 #include "itkDiffusionTensor3DRigidTransform.h"
 
@@ -155,7 +155,7 @@ DiffusionTensor3DRigidTransform<TData>
   this->m_TransformT = MeasurementFrameTranspose * this->m_TransformMatrix;
   this->m_Transform = TransformMatrixTranspose * this->m_MeasurementFrame;
   this->ComputeOffset();
-  this->latestTime = Object::GetMTime();
+  this->m_LatestTime = Object::GetMTime();
 
 }
 

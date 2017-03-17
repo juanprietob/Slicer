@@ -51,6 +51,7 @@ Version:   $Revision: 1.18 $
 #include "vtkMRMLSliceCompositeNode.h"
 #include "vtkMRMLSliceNode.h"
 #include "vtkMRMLSnapshotClipNode.h"
+#include "vtkMRMLSubjectHierarchyNode.h"
 #include "vtkMRMLTableNode.h"
 #include "vtkMRMLTableStorageNode.h"
 #include "vtkMRMLTableViewNode.h"
@@ -214,6 +215,7 @@ vtkMRMLScene::vtkMRMLScene()
   this->RegisterNodeClass( vtkSmartPointer< vtkMRMLTableNode >::New() );
   this->RegisterNodeClass( vtkSmartPointer< vtkMRMLTableStorageNode >::New() );
   this->RegisterNodeClass( vtkSmartPointer< vtkMRMLTableViewNode >::New() );
+  this->RegisterNodeClass(vtkSmartPointer<vtkMRMLSubjectHierarchyNode>::New()); // Increments next subject hierarchy item ID
 }
 
 //------------------------------------------------------------------------------
@@ -1206,7 +1208,7 @@ vtkMRMLNode*  vtkMRMLScene::AddNode(vtkMRMLNode *n)
     return NULL;
     }
 #ifndef NDEBUG
-  // Since calling IsNodePresent is costly, a "developper hint" is printed only
+  // Since calling IsNodePresent is costly, a "developer hint" is printed only
   // if build as debug. We can't exit here as the release would then be
   // different from debug.
   // The caller should make sure the node has not been added yet.

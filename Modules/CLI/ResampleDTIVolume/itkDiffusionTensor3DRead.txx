@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DRead_txx
-#define __itkDiffusionTensor3DRead_txx
+#ifndef itkDiffusionTensor3DRead_txx
+#define itkDiffusionTensor3DRead_txx
 
 #include "itkDiffusionTensor3DRead.h"
 
@@ -25,7 +25,7 @@ DiffusionTensor3DRead<TData>
 {
   m_MeasurementFrame.SetIdentity();
   m_NumberOfThreads = 0;
-  m_HasMeasurementFrame = false ; 
+  m_HasMeasurementFrame = false;
 }
 
 template <class TData>
@@ -76,7 +76,7 @@ DiffusionTensor3DRead<TData>
               m_MeasurementFrame[i][j] = tagvalue.at( j ).at( i );
               }
             }
-          m_HasMeasurementFrame = true ;
+          m_HasMeasurementFrame = true;
           }
         }
       // get the space orientation

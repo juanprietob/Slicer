@@ -15,8 +15,8 @@
 
 =========================================================================*/
 
-#ifndef __itkAnisotropicSimilarity3DTransform_h
-#define __itkAnisotropicSimilarity3DTransform_h
+#ifndef itkAnisotropicSimilarity3DTransform_h
+#define itkAnisotropicSimilarity3DTransform_h
 
 #include <iostream>
 #include "itkVersorRigid3DTransform.h"
@@ -24,7 +24,8 @@
 namespace itk
 {
 
-/** \brief AnisotropicSimilarity3DTransform of a vector space (e.g. space
+/** \class AnisotropicSimilarity3DTransform
+ * \brief AnisotropicSimilarity3DTransform of a vector space (e.g. space
  * coordinates)
  *
  * This transform applies a rotation, translation and anisotropic scaling
@@ -81,10 +82,12 @@ public:
   typedef typename Superclass::OutputVectorType    OutputVectorType;
   typedef typename Superclass::InputVnlVectorType  InputVnlVectorType;
   typedef typename Superclass::OutputVnlVectorType OutputVnlVectorType;
+
   typedef typename Superclass::InputCovariantVectorType
   InputCovariantVectorType;
   typedef typename Superclass::OutputCovariantVectorType
   OutputCovariantVectorType;
+
   typedef typename Superclass::MatrixType        MatrixType;
   typedef typename Superclass::InverseMatrixType InverseMatrixType;
   typedef typename Superclass::CenterType        CenterType;
@@ -158,4 +161,4 @@ private:
 #include "itkAnisotropicSimilarity3DTransform.txx"
 #endif
 
-#endif /* __itkAnisotropicSimilarity3DTransform_h */
+#endif /* itkAnisotropicSimilarity3DTransform_h */

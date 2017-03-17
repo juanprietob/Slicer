@@ -17,6 +17,9 @@ Version:   $Revision: 1.8 $
 #include "vtkMRMLScene.h"
 #include "vtkMRMLStorageNode.h"
 #include "vtkMRMLNode.h"
+#include "vtkMRMLSubjectHierarchyNode.h"
+#include "vtkMRMLSubjectHierarchyLegacyNode.h"
+#include "vtkMRMLSceneViewNode.h"
 #include "vtkTagTable.h"
 
 // VTK includes
@@ -82,6 +85,35 @@ void vtkMRMLParser::StartElement(const char* tagName, const char** atts)
     return;
     } // MRML
 
+  // SubjectHierarchyItem tag means the element belongs to a subject hierarchy item, not a MRML node
+  //TODO: This special case can be resolved by a more generic mechanism that passes the non-node child
+  //      elements to the containing node for parsing
+  if (!strcmp(tagName, "SubjectHierarchyItem"))
+    {
+    // Have the recently loaded subject hierarchy node parse the item and add it as unresolved.
+    // Getting the last loaded node safely returns the subject hierarchy nodes, as only it can have
+    // children items named SubjectHierarchyItem.
+    // Another possibility is that it's part of a scene view, in which case we need to access the
+    // last node in the scene view's snapshot scene
+    vtkMRMLSubjectHierarchyNode* subjectHierarchyNode = vtkMRMLSubjectHierarchyNode::SafeDownCast(
+      this->NodeCollection->GetItemAsObject(this->NodeCollection->GetNumberOfItems()-1) );
+    if (!subjectHierarchyNode)
+      {
+      vtkMRMLSceneViewNode* sceneViewNode = vtkMRMLSceneViewNode::SafeDownCast(
+        this->NodeCollection->GetItemAsObject(this->NodeCollection->GetNumberOfItems()-1) );
+      if (!sceneViewNode)
+        {
+        vtkWarningMacro("Invalid parent node element for SubjectHierarchyItem");
+        return;
+        }
+      vtkCollection* shNodeCollection = sceneViewNode->GetStoredScene()->GetNodesByClass("vtkMRMLSubjectHierarchyNode");
+      subjectHierarchyNode = vtkMRMLSubjectHierarchyNode::SafeDownCast(shNodeCollection->GetItemAsObject(0));
+      shNodeCollection->Delete();
+      }
+    subjectHierarchyNode->ReadItemFromXML(atts);
+    return;
+    }
+
   const char* tmp = this->MRMLScene->GetClassNameByTag(tagName);
   std::string className = tmp ? tmp : "";
 
@@ -140,13 +172,28 @@ void vtkMRMLParser::StartElement(const char* tagName, const char** atts)
       }
     }
 
-  // ID will be set by AddNode
-  /*
-  if (node->GetID() == NULL)
+  // Replace old-style subject hierarchy nodes (vtkMRMLSubjectHierarchy nodes without the version
+  // attribute) with legacy node type that is handled by the hierarchy
+  if (node->IsA("vtkMRMLSubjectHierarchyNode"))
     {
-    node->SetID(this->MRMLScene->GetUniqueIDByClass(className));
+    const char* shVersionAttr = node->GetAttribute(
+      vtkMRMLSubjectHierarchyNode::SUBJECTHIERARCHY_VERSION_ATTRIBUTE_NAME.c_str() );
+    bool isOldShNode = shVersionAttr ? (atoi(shVersionAttr)<2) : true;
+    if (isOldShNode)
+      {
+      // create a copy of the node of the correct class
+      vtkMRMLSubjectHierarchyLegacyNode* legacyShNode = vtkMRMLSubjectHierarchyLegacyNode::New(); // Type is not registered
+      // Set scene and read attributes manually, because CopyWithScene does not work due to vtkMRMLSubjectHierarchy node not
+      // being child class of vtkMRMLHierarchyNode, and copying non-existent node references results in invalid memory access
+      legacyShNode->SetScene(this->GetMRMLScene());
+      legacyShNode->ReadXMLAttributes(atts);
+      legacyShNode->HideFromEditorsOff(); // disable hide from editors so that the nodes can be added to subject hierarchy
+      // replace the current node with the new one
+      node->Delete();
+      node=legacyShNode;
+      }
     }
-  */
+
   if (!this->NodeStack.empty())
     {
     vtkMRMLNode* parentNode = this->NodeStack.top();
@@ -171,7 +218,7 @@ void vtkMRMLParser::StartElement(const char* tagName, const char** atts)
 
 //-----------------------------------------------------------------------------
 
-void vtkMRMLParser::EndElement (const char *name)
+void vtkMRMLParser::EndElement(const char *name)
 {
   if ( !strcmp(name, "MRML") || this->NodeStack.empty() )
     {

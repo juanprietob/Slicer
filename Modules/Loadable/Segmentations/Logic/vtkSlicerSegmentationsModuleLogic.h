@@ -113,11 +113,11 @@ public:
   ///   object! For example using vtkSmartPointer<vtkSegment>::Take
   static vtkSegment* CreateSegmentFromModelNode(vtkMRMLModelNode* modelNode, vtkMRMLSegmentationNode* segmentationNode=NULL);
 
-  /// Utility function for getting the segmentation node for a segment subject hierarchy node
-  static vtkMRMLSegmentationNode* GetSegmentationNodeForSegmentSubjectHierarchyNode(vtkMRMLSubjectHierarchyNode* segmentShNode);
+  /// Utility function for getting the segmentation node for a segment subject hierarchy item
+  static vtkMRMLSegmentationNode* GetSegmentationNodeForSegmentSubjectHierarchyItem(vtkIdType segmentShItemID, vtkMRMLScene* scene);
 
-  /// Utility function for getting the segment object for a segment subject hierarchy node
-  static vtkSegment* GetSegmentForSegmentSubjectHierarchyNode(vtkMRMLSubjectHierarchyNode* segmentShNode);
+  /// Utility function for getting the segment object for a segment subject hierarchy item
+  static vtkSegment* GetSegmentForSegmentSubjectHierarchyItem(vtkIdType segmentShItemID, vtkMRMLScene* scene);
 
   /// Export segment to representation MRML node.
   /// 1. If representation node is a labelmap node, then the binary labelmap representation of the
@@ -149,17 +149,19 @@ public:
 
   /// Import all labels from a labelmap node to a segmentation node, each label to a separate segment.
   /// The colors of the new segments are set from the color table corresponding to the labelmap volume.
-  static bool ImportLabelmapToSegmentationNode(vtkMRMLLabelMapVolumeNode* labelmapNode, vtkMRMLSegmentationNode* segmentationNode);
+  static bool ImportLabelmapToSegmentationNode(vtkMRMLLabelMapVolumeNode* labelmapNode,
+    vtkMRMLSegmentationNode* segmentationNode, std::string insertBeforeSegmentId = "");
 
   /// Import all labels from a labelmap image to a segmentation node, each label to a separate segment
   /// The colors of the new segments are randomly generated.
   /// LabelmapImage is defined in the segmentation node's coordinate system
   /// (parent transform of the segmentation node is not used during import).
   /// \param baseSegmentName Prefix for the names of the new segments. Empty by default, in which case the prefix will be "Label"
-  static bool ImportLabelmapToSegmentationNode(vtkOrientedImageData* labelmapImage, vtkMRMLSegmentationNode* segmentationNode, std::string baseSegmentName="");
+  static bool ImportLabelmapToSegmentationNode(vtkOrientedImageData* labelmapImage, vtkMRMLSegmentationNode* segmentationNode,
+    std::string baseSegmentName = "", std::string insertBeforeSegmentId = "");
 
   /// Import model into the segmentation as a segment.
-  static bool ImportModelToSegmentationNode(vtkMRMLModelNode* modelNode, vtkMRMLSegmentationNode* segmentationNode);
+  static bool ImportModelToSegmentationNode(vtkMRMLModelNode* modelNode, vtkMRMLSegmentationNode* segmentationNode, std::string insertBeforeSegmentId = "");
 
   /// Create representation of only one segment in a segmentation.
   /// Useful if only one segment is processed, and we do not want to convert all segments to a certain

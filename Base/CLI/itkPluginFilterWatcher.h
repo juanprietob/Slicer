@@ -8,8 +8,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __itkPluginFilterWatcher_h
-#define __itkPluginFilterWatcher_h
+#ifndef itkPluginFilterWatcher_h
+#define itkPluginFilterWatcher_h
 
 // ModuleDescriptionParser includes
 #include <ModuleProcessInformation.h>
@@ -38,7 +38,7 @@ public:
     m_ProcessInformation = inf;
     m_Fraction = fraction;
     m_Start = start;
-  };
+  }
 
 protected:
 
@@ -192,6 +192,7 @@ virtual void EndFilter()
 
 
   ModuleProcessInformation *m_ProcessInformation;
+
   double m_Fraction;
   double m_Start;
 };
