@@ -28,10 +28,10 @@
 
 #include "qSlicerSubjectHierarchyModuleExport.h"
 
-class vtkMRMLNode;
-class vtkMRMLSubjectHierarchyNode;
+#include <ctkVTKObject.h>
+
 class qSlicerSubjectHierarchyModuleWidgetPrivate;
-class qMRMLSceneSubjectHierarchyModel;
+class qMRMLSubjectHierarchyModel;
 class qSlicerSubjectHierarchyPluginLogic;
 class qSlicerSubjectHierarchyAbstractPlugin;
 
@@ -40,21 +40,18 @@ class Q_SLICER_QTMODULES_SUBJECTHIERARCHY_EXPORT qSlicerSubjectHierarchyModuleWi
   public qSlicerAbstractModuleWidget
 {
   Q_OBJECT
+  QVTK_OBJECT
 
 public:
   typedef qSlicerAbstractModuleWidget Superclass;
   qSlicerSubjectHierarchyModuleWidget(QWidget *parent=0);
   virtual ~qSlicerSubjectHierarchyModuleWidget();
 
-  virtual void enter();
-  virtual void exit();
-
   Q_INVOKABLE qSlicerSubjectHierarchyPluginLogic* pluginLogic();
   Q_INVOKABLE void setPluginLogic(qSlicerSubjectHierarchyPluginLogic* pluginLogic);
 
 public slots:
-  /// Update widget GUI from parameter node
-  void updateWidgetFromMRML();
+  virtual void setMRMLScene(vtkMRMLScene* scene);
 
 protected slots:
   /// Show or hide MRML IDs
@@ -63,12 +60,19 @@ protected slots:
   /// Show or hide transforms
   void setTransformsVisible(bool visible);
 
-  /// Set data node associated to the selected subject hierarchy node to the data node inspector
-  void setDataNodeFromSubjectHierarchyNode(vtkMRMLNode* node);
+  /// Set data node associated to the selected subject hierarchy item to the data node inspector
+  void setDataNodeFromSubjectHierarchyItem(vtkIdType itemID);
+  /// Set subject hierarchy item information to the label
+  void setInfoLabelFromSubjectHierarchyItem(vtkIdType itemID);
+  /// Handle subject hierarchy item modified event (update item info label if needed)
+  void onSubjectHierarchyItemModified(vtkIdType itemID);
 
 public:
-  /// Assessor function for subject hierarchy scene model (for python)
-  Q_INVOKABLE qMRMLSceneSubjectHierarchyModel* subjectHierarchySceneModel()const;
+  /// Assessor function for subject hierarchy model (for python)
+  Q_INVOKABLE qMRMLSubjectHierarchyModel* subjectHierarchySceneModel()const;
+
+protected:
+  static void onSubjectHierarchyItemEvent(vtkObject* caller, unsigned long event, void* clientData, void* callData);
 
 protected:
   QScopedPointer<qSlicerSubjectHierarchyModuleWidgetPrivate> d_ptr;

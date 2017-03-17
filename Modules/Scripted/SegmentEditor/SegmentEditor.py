@@ -13,7 +13,7 @@ class SegmentEditor(ScriptedLoadableModule):
     import string
     self.parent.title = "Segment Editor"
     self.parent.categories = ["", "Segmentation"]
-    self.parent.dependencies = ["Segmentations"]
+    self.parent.dependencies = ["Segmentations", "SubjectHierarchy"]
     self.parent.contributors = ["Csaba Pinter (Queen's University), Andras Lasso (Queen's University)"]
     self.parent.helpText = """
 This module allows editing segmentation objects by directly drawing and using segmentaiton tools on the contained segments.
@@ -25,6 +25,12 @@ so for example the closed surface can be visualized as edited in the 3D view.
 This work is part of SparKit project, funded by Cancer Care Ontario (CCO)'s ACRU program
 and Ontario Consortium for Adaptive Interventions in Radiation Oncology (OCAIRO).
 """
+
+  def setup(self):
+    # Register subject hierarchy plugin
+    import SubjectHierarchyPlugins
+    scriptedPlugin = slicer.qSlicerSubjectHierarchyScriptedPlugin(None)
+    scriptedPlugin.setPythonSource(SubjectHierarchyPlugins.SegmentEditorSubjectHierarchyPlugin.filePath)
 
 #
 # SegmentEditorWidget
@@ -167,3 +173,11 @@ class SegmentEditorTest(ScriptedLoadableModuleTest):
     """
     self.delayDisplay("Starting the test")
     self.delayDisplay('Test passed!')
+
+#
+# Class for avoiding python error that is caused by the method SegmentEditor::setup
+# http://www.na-mic.org/Bug/view.php?id=3871
+#
+class SegmentEditorFileWriter:
+  def __init__(self, parent):
+    pass

@@ -190,6 +190,12 @@ int vtkSlicerCropVolumeLogic::Apply(vtkMRMLCropVolumeParametersNode* pnode)
       vtkErrorMacro("CropVolume: failed to create output volume");
       return -2;
       }
+    vtkMRMLTransformNode *outputTransform = outputVolume->GetParentTransformNode();
+    if (outputTransform && !outputTransform->IsTransformToWorldLinear())
+      {
+      // Output node must not be under non-linear transform
+      outputVolume->SetAndObserveTransformNodeID(NULL);
+      }
     }
 
   int errorCode = 0;
@@ -202,13 +208,8 @@ int vtkSlicerCropVolumeLogic::Apply(vtkMRMLCropVolumeParametersNode* pnode)
     errorCode = this->CropInterpolated(inputROI, inputVolume, outputVolume,
       pnode->GetIsotropicResampling(), pnode->GetSpacingScalingConst(), pnode->GetInterpolationMode());
     }
-  if (errorCode != 0)
-    {
-    return errorCode;
-    }
-  // no errors
   pnode->SetOutputVolumeNodeID(outputVolume->GetID());
-  return 0;
+  return errorCode;
 }
 
 //----------------------------------------------------------------------------
@@ -472,7 +473,7 @@ int vtkSlicerCropVolumeLogic::CropInterpolated(vtkMRMLAnnotationROINode* roi, vt
 
   // contains axis directions, in unconventional indexing (column, row)
   // so that it can be conveniently normalized
-  double outputDirectionColRow[3][3] = { 0 };
+  double outputDirectionColRow[3][3] = {{ 0 }};
   for (int column = 0; column < 3; column++)
     {
     for (int row = 0; row < 3; row++)

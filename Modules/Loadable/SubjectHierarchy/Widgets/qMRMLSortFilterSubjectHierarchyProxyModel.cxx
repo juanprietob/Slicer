@@ -22,40 +22,65 @@
 
 #include "qMRMLSortFilterSubjectHierarchyProxyModel.h"
 
-// Subject Hierarchy MRML includes
+// MRML include
 #include "vtkMRMLSubjectHierarchyNode.h"
-#include "vtkMRMLSubjectHierarchyConstants.h"
+
+// Subject Hierarchy includes
 #include "qSlicerSubjectHierarchyPluginHandler.h"
 #include "qSlicerSubjectHierarchyAbstractPlugin.h"
+#include "qMRMLSubjectHierarchyModel.h"
 
-// MRML Widgets includes
-#include "qMRMLSceneModel.h"
+// Qt includes
+#include <QStandardItem>
 
 // -----------------------------------------------------------------------------
 // qMRMLSortFilterSubjectHierarchyProxyModelPrivate
 
 // -----------------------------------------------------------------------------
-/// \ingroup Slicer_QtModules_SubjectHierarchy
+/// \ingroup Slicer_MRMLWidgets
 class qMRMLSortFilterSubjectHierarchyProxyModelPrivate
 {
 public:
   qMRMLSortFilterSubjectHierarchyProxyModelPrivate();
+
+  QString NameFilter;
+  QString AttributeNameFilter;
+  QString AttributeValueFilter;
+  QString LevelFilter;
+  vtkIdType HideItemsUnaffiliatedWithItemID;
 };
 
 // -----------------------------------------------------------------------------
 qMRMLSortFilterSubjectHierarchyProxyModelPrivate::qMRMLSortFilterSubjectHierarchyProxyModelPrivate()
+  : NameFilter(QString())
+  , AttributeNameFilter(QString())
+  , AttributeValueFilter(QString())
+  , LevelFilter(QString())
+  , HideItemsUnaffiliatedWithItemID(vtkMRMLSubjectHierarchyNode::INVALID_ITEM_ID)
 {
 }
 
 // -----------------------------------------------------------------------------
 // qMRMLSortFilterSubjectHierarchyProxyModel
 
+// -----------------------------------------------------------------------------
+CTK_GET_CPP(qMRMLSortFilterSubjectHierarchyProxyModel, QString, nameFilter, NameFilter);
+CTK_GET_CPP(qMRMLSortFilterSubjectHierarchyProxyModel, QString, attributeNameFilter, AttributeNameFilter);
+CTK_GET_CPP(qMRMLSortFilterSubjectHierarchyProxyModel, QString, attributeValueFilter, AttributeValueFilter);
+CTK_GET_CPP(qMRMLSortFilterSubjectHierarchyProxyModel, QString, levelFilter, LevelFilter);
+
 //------------------------------------------------------------------------------
 qMRMLSortFilterSubjectHierarchyProxyModel::qMRMLSortFilterSubjectHierarchyProxyModel(QObject *vparent)
- : qMRMLSortFilterProxyModel(vparent)
+ : QSortFilterProxyModel(vparent)
  , d_ptr(new qMRMLSortFilterSubjectHierarchyProxyModelPrivate)
 {
-  this->setShowHidden(true);
+  // For speed issue, we might want to disable the dynamic sorting however
+  // when having source models using QStandardItemModel, drag&drop is handled
+  // in 2 steps, first a new row is created (which automatically calls
+  // filterAcceptsRow() that returns false) and then set the row with the
+  // correct values (which doesn't call filterAcceptsRow() on the up to date
+  // value unless DynamicSortFilter is true).
+  this->setDynamicSortFilter(true);
 }
 
 //------------------------------------------------------------------------------
@@ -63,34 +88,288 @@ qMRMLSortFilterSubjectHierarchyProxyModel::~qMRMLSortFilterSubjectHierarchyProxy
 {
 }
 
-//------------------------------------------------------------------------------
-qMRMLSortFilterProxyModel::AcceptType qMRMLSortFilterSubjectHierarchyProxyModel
-::filterAcceptsNode(vtkMRMLNode* node)const
+//-----------------------------------------------------------------------------
+vtkMRMLScene* qMRMLSortFilterSubjectHierarchyProxyModel::mrmlScene()const
 {
-  if (!node)
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  if (!model)
     {
-    return Accept;
+    return NULL;
+    }
+  return model->mrmlScene();
+}
+
+//-----------------------------------------------------------------------------
+vtkMRMLSubjectHierarchyNode* qMRMLSortFilterSubjectHierarchyProxyModel::subjectHierarchyNode()const
+{
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  if (!model)
+    {
+    return NULL;
+    }
+  return model->subjectHierarchyNode();
+}
+
+//-----------------------------------------------------------------------------
+void qMRMLSortFilterSubjectHierarchyProxyModel::setNameFilter(QString filter)
+{
+  Q_D(qMRMLSortFilterSubjectHierarchyProxyModel);
+  if (d->NameFilter == filter)
+    {
+    return;
+    }
+  d->NameFilter = filter;
+  this->invalidateFilter();
+}
+
+//-----------------------------------------------------------------------------
+void qMRMLSortFilterSubjectHierarchyProxyModel::setAttributeNameFilter(QString filter)
+{
+  Q_D(qMRMLSortFilterSubjectHierarchyProxyModel);
+  if (d->AttributeNameFilter == filter)
+    {
+    return;
+    }
+  d->AttributeNameFilter = filter;
+  this->invalidateFilter();
+}
+
+//-----------------------------------------------------------------------------
+void qMRMLSortFilterSubjectHierarchyProxyModel::setAttributeValueFilter(QString filter)
+{
+  Q_D(qMRMLSortFilterSubjectHierarchyProxyModel);
+  if (d->AttributeValueFilter == filter)
+    {
+    return;
+    }
+  d->AttributeValueFilter = filter;
+  this->invalidateFilter();
+}
+
+//-----------------------------------------------------------------------------
+void qMRMLSortFilterSubjectHierarchyProxyModel::setLevelFilter(QString filter)
+{
+  Q_D(qMRMLSortFilterSubjectHierarchyProxyModel);
+  if (d->LevelFilter == filter)
+    {
+    return;
+    }
+  d->LevelFilter = filter;
+  this->invalidateFilter();
+}
+
+//-----------------------------------------------------------------------------
+vtkIdType qMRMLSortFilterSubjectHierarchyProxyModel::hideItemsUnaffiliatedWithItemID()
+{
+  Q_D(qMRMLSortFilterSubjectHierarchyProxyModel);
+  return d->HideItemsUnaffiliatedWithItemID;
+}
+
+//-----------------------------------------------------------------------------
+void qMRMLSortFilterSubjectHierarchyProxyModel::setHideItemsUnaffiliatedWithItemID(vtkIdType itemID)
+{
+  Q_D(qMRMLSortFilterSubjectHierarchyProxyModel);
+  if (d->HideItemsUnaffiliatedWithItemID == itemID)
+    {
+    return;
+    }
+  d->HideItemsUnaffiliatedWithItemID = itemID;
+  this->invalidateFilter();
+}
+
+//-----------------------------------------------------------------------------
+QModelIndex qMRMLSortFilterSubjectHierarchyProxyModel::subjectHierarchySceneIndex()const
+{
+  qMRMLSubjectHierarchyModel* sceneModel = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  return this->mapFromSource(sceneModel->subjectHierarchySceneIndex());
+}
+
+//-----------------------------------------------------------------------------
+vtkIdType qMRMLSortFilterSubjectHierarchyProxyModel::subjectHierarchyItemFromIndex(const QModelIndex& index)const
+{
+  qMRMLSubjectHierarchyModel* sceneModel = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  return sceneModel->subjectHierarchyItemFromIndex( this->mapToSource(index) );
+}
+
+//-----------------------------------------------------------------------------
+QModelIndex qMRMLSortFilterSubjectHierarchyProxyModel::indexFromSubjectHierarchyItem(vtkIdType itemID, int column)const
+{
+  qMRMLSubjectHierarchyModel* sceneModel = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  return this->mapFromSource(sceneModel->indexFromSubjectHierarchyItem(itemID, column));
+}
+
+//------------------------------------------------------------------------------
+int qMRMLSortFilterSubjectHierarchyProxyModel::acceptedItemCount(vtkIdType rootItemID)const
+{
+  vtkMRMLSubjectHierarchyNode* shNode = this->subjectHierarchyNode();
+  if (!shNode)
+    {
+    return 0;
     }
 
-  AcceptType res = this->Superclass::filterAcceptsNode(node);
-  if (res == Reject || res == RejectButPotentiallyAcceptable)
+  // Count the accepted items under the root item
+  int itemCount = 0;
+  std::vector<vtkIdType> childItemIDs;
+  shNode->GetItemChildren(rootItemID, childItemIDs, true);
+  for (std::vector<vtkIdType>::iterator childIt=childItemIDs.begin(); childIt!=childItemIDs.end(); ++childIt)
     {
-    return res;
-    }
-
-  // Show subject hierarchy nodes
-  vtkMRMLSubjectHierarchyNode* subjectHierarchyNode = vtkMRMLSubjectHierarchyNode::SafeDownCast(node);
-  if (subjectHierarchyNode)
-    {
-    // Hide if explicitly excluded from tree
-    vtkMRMLNode* associatedNode = subjectHierarchyNode->GetAssociatedNode();
-    if ( associatedNode && associatedNode->GetAttribute(vtkMRMLSubjectHierarchyConstants::GetSubjectHierarchyExcludeFromTreeAttributeName().c_str()) )
+    if (this->filterAcceptsItem(*childIt))
       {
-      return Reject;
+      itemCount++;
+      }
+    }
+  return itemCount;
+}
+
+//-----------------------------------------------------------------------------
+QStandardItem* qMRMLSortFilterSubjectHierarchyProxyModel::sourceItem(const QModelIndex& sourceIndex)const
+{
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  if (!model)
+    {
+    return NULL;
+    }
+  return sourceIndex.isValid() ? model->itemFromIndex(sourceIndex) : model->invisibleRootItem();
+}
+
+//------------------------------------------------------------------------------
+bool qMRMLSortFilterSubjectHierarchyProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent)const
+{
+  QStandardItem* parentItem = this->sourceItem(sourceParent);
+  if (!parentItem)
+    {
+    return false;
+    }
+  QStandardItem* item = NULL;
+
+  // Sometimes the row is not complete (DnD), search for a non null item
+  for (int childIndex=0; childIndex < parentItem->columnCount(); ++childIndex)
+    {
+    item = parentItem->child(sourceRow, childIndex);
+    if (item)
+      {
+      break;
+      }
+    }
+  if (item == NULL)
+    {
+    return false;
+    }
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+  vtkIdType itemID = model->subjectHierarchyItemFromItem(item);
+  return this->filterAcceptsItem(itemID);
+}
+
+//------------------------------------------------------------------------------
+bool qMRMLSortFilterSubjectHierarchyProxyModel::filterAcceptsItem(vtkIdType itemID)const
+{
+  Q_D(const qMRMLSortFilterSubjectHierarchyProxyModel);
+
+  if (!itemID)
+    {
+    return true;
+    }
+  vtkMRMLSubjectHierarchyNode* shNode = this->subjectHierarchyNode();
+  if (!shNode)
+    {
+    return true;
+    }
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(this->sourceModel());
+
+  // Declare condition flag that is set to true if an item check fails.
+  // Needed because if an item would be filtered out based on the criteria but any of its children are shown,
+  // the item needs to be shown (so that there are no orphan items in the filtered model)
+  bool onlyAcceptIfAnyChildIsAccepted = false;
+
+  // Handle hiding unaffiliated item
+  // Used when the root item needs to be shown in the tree but not its siblings or other branches in the tree
+  if (d->HideItemsUnaffiliatedWithItemID)
+    {
+    if (!model->isAffiliatedItem(itemID, d->HideItemsUnaffiliatedWithItemID))
+      {
+      return false;
+      }
+    }
+
+  // Filter by data node properties
+  vtkMRMLNode* dataNode = shNode->GetItemDataNode(itemID);
+  if (dataNode)
+    {
+    // Filter by hide from editor property
+    if (dataNode->GetHideFromEditors())
+      {
+      return false;
       }
 
-    return Accept;
+    // Filter by exclude attribute
+    if (dataNode->GetAttribute(vtkMRMLSubjectHierarchyConstants::GetSubjectHierarchyExcludeFromTreeAttributeName().c_str()))
+      {
+      return false;
+      }
     }
 
-  return Reject;
+  // Filter by level
+  if (!d->LevelFilter.isEmpty())
+    {
+    std::string levelFilterStr(d->LevelFilter.toLatin1().constData());
+    if (!shNode->IsItemLevel(itemID, levelFilterStr))
+      {
+      // If level was requested but different, then only show if any of its children are shown
+      onlyAcceptIfAnyChildIsAccepted = true;
+      }
+    }
+
+  // Filter by item attribute
+  if (!d->AttributeNameFilter.isEmpty())
+    {
+    std::string attributeNameFilterStr(d->AttributeNameFilter.toLatin1().constData());
+    if (!shNode->HasItemAttribute(itemID, attributeNameFilterStr))
+      {
+      // If attribute was requested but missing, then only show if any of its children are shown
+      onlyAcceptIfAnyChildIsAccepted = true;
+      }
+    else if (!d->AttributeValueFilter.isEmpty())
+      {
+      std::string attributeValueFilterStr(d->AttributeValueFilter.toLatin1().constData());
+      std::string attributeValue = shNode->GetItemAttribute(itemID, attributeNameFilterStr);
+      if (attributeValue.compare(attributeValueFilterStr))
+        {
+        // If attribute value check was requested but failed, then only show if any of its children are shown
+        onlyAcceptIfAnyChildIsAccepted = true;
+        }
+      }
+    }
+
+  // Filter by item name
+  if (!d->NameFilter.isEmpty())
+    {
+    QString itemName(shNode->GetItemName(itemID).c_str());
+    if (!itemName.contains(d->NameFilter, Qt::CaseInsensitive))
+      {
+      onlyAcceptIfAnyChildIsAccepted = true;
+      }
+    }
+
+  // If the visibility of an item depends on whether any of its children are shown, then evaluate that condition
+  if (onlyAcceptIfAnyChildIsAccepted)
+    {
+    bool isChildShown = false;
+    std::vector<vtkIdType> childItemIDs;
+    shNode->GetItemChildren(itemID, childItemIDs, true);
+    for (std::vector<vtkIdType>::iterator childIt=childItemIDs.begin(); childIt!=childItemIDs.end(); ++childIt)
+      {
+      if (this->filterAcceptsItem(*childIt))
+        {
+        isChildShown = true;
+        break;
+        }
+      }
+    if (!isChildShown)
+      {
+      return false;
+      }
+    }
+
+  // All criteria were met
+  return true;
 }

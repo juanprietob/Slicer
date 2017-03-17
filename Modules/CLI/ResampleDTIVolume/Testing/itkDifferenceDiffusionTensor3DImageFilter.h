@@ -12,8 +12,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __itkDifferenceDiffusionTensor3DImageFilter_h
-#define __itkDifferenceDiffusionTensor3DImageFilter_h
+#ifndef itkDifferenceDiffusionTensor3DImageFilter_h
+#define itkDifferenceDiffusionTensor3DImageFilter_h
 
 #include "itkImageToImageFilter.h"
 #include "itkDiffusionTensor3D.h"
@@ -132,8 +132,8 @@ protected:
 
   Array<AccumulateType> m_ThreadDifferenceSum;
   Array<unsigned long>  m_ThreadNumberOfPixels;
-  MatrixType            measurementFrameValid;
-  MatrixType            measurementFrameTest;
+  MatrixType            m_MeasurementFrameValid;
+  MatrixType            m_MeasurementFrameTest;
 private:
   DifferenceDiffusionTensor3DImageFilter(const Self &); // purposely not implemented
   void operator=(const Self &);                         // purposely not implemented

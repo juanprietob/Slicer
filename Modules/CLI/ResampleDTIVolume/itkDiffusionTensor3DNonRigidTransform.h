@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DNonRigidTransform_h
-#define __itkDiffusionTensor3DNonRigidTransform_h
+#ifndef itkDiffusionTensor3DNonRigidTransform_h
+#define itkDiffusionTensor3DNonRigidTransform_h
 
 #include "itkDiffusionTensor3DTransform.h"
 #include "itkDiffusionTensor3DFSAffineTransform.h"
@@ -58,8 +58,8 @@ public:
   void SetAffineTransformType(typename AffineTransform::Pointer transform);
 protected:
   DiffusionTensor3DNonRigidTransform();
-  unsigned long      latestTime;
-  typename TransformType::Pointer m_Transform;
+  unsigned long                     m_LatestTime;
+  typename TransformType::Pointer   m_Transform;
   typename AffineTransform::Pointer m_Affine;
 };
 

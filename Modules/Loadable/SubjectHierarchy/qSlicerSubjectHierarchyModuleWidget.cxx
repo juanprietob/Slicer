@@ -27,7 +27,7 @@
 #include "vtkMRMLSubjectHierarchyNode.h"
 #include "vtkSlicerSubjectHierarchyModuleLogic.h"
 
-#include "qMRMLSceneSubjectHierarchyModel.h"
+#include "qMRMLSubjectHierarchyModel.h"
 #include "qMRMLSortFilterSubjectHierarchyProxyModel.h"
 
 #include "qSlicerSubjectHierarchyPluginLogic.h"
@@ -40,10 +40,15 @@
 // Qt includes
 #include <QSettings>
 #include <QMessageBox>
+#include <QDebug>
 
 // MRML includes
 #include <vtkMRMLScene.h>
 #include <vtkMRMLNode.h>
+
+// VTK includes
+#include <vtkCallbackCommand.h>
+#include <vtkSmartPointer.h>
 
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_SubjectHierarchy
@@ -59,6 +64,9 @@ public:
 public:
   /// Subject hierarchy plugin logic
   qSlicerSubjectHierarchyPluginLogic* PluginLogic;
+
+  /// Callback object to get notified about item modified events
+  vtkSmartPointer<vtkCallbackCommand> CallBack;
 };
 
 //-----------------------------------------------------------------------------
@@ -69,6 +77,9 @@ qSlicerSubjectHierarchyModuleWidgetPrivate::qSlicerSubjectHierarchyModuleWidgetP
   : q_ptr(&object)
   , PluginLogic(NULL)
 {
+  this->CallBack = vtkSmartPointer<vtkCallbackCommand>::New();
+  this->CallBack->SetClientData(q_ptr);
+  this->CallBack->SetCallback(qSlicerSubjectHierarchyModuleWidget::onSubjectHierarchyItemEvent);
 }
 
 //-----------------------------------------------------------------------------
@@ -114,39 +125,6 @@ void qSlicerSubjectHierarchyModuleWidget::setPluginLogic(qSlicerSubjectHierarchy
 }
 
 //-----------------------------------------------------------------------------
-void qSlicerSubjectHierarchyModuleWidget::enter()
-{
-  this->onEnter();
-  this->Superclass::enter();
-}
-
-//-----------------------------------------------------------------------------
-void qSlicerSubjectHierarchyModuleWidget::exit()
-{
-  this->Superclass::exit();
-
-  Q_D(qSlicerSubjectHierarchyModuleWidget);
-  d->SubjectHierarchyTreeView->setMRMLScene(NULL);
-}
-
-//-----------------------------------------------------------------------------
-void qSlicerSubjectHierarchyModuleWidget::onEnter()
-{
-  if (!this->mrmlScene())
-    {
-    return;
-    }
-
-  Q_D(qSlicerSubjectHierarchyModuleWidget);
-
-  d->SubjectHierarchyTreeView->setMRMLScene(this->mrmlScene());
-
-  this->updateWidgetFromMRML();
-
-  this->pluginLogic()->checkSupportedNodesInScene();
-}
-
-//-----------------------------------------------------------------------------
 void qSlicerSubjectHierarchyModuleWidget::setup()
 {
   Q_D(qSlicerSubjectHierarchyModuleWidget);
@@ -157,21 +135,18 @@ void qSlicerSubjectHierarchyModuleWidget::setup()
   connect( d->DisplayMRMLIDsCheckBox, SIGNAL(toggled(bool)), this, SLOT(setMRMLIDsVisible(bool)) );
   connect( d->DisplayTransformsCheckBox, SIGNAL(toggled(bool)), this, SLOT(setTransformsVisible(bool)) );
 
-  // Make MRML connections
-  // Connect scene node added event so that the new subject hierarchy nodes can be claimed by a plugin
-  qvtkConnect( this->mrmlScene(), vtkMRMLScene::NodeAddedEvent, this, SLOT( onNodeAdded(vtkObject*,vtkObject*) ) );
-  // Connect scene node added event so that the associated subject hierarchy node can be deleted too
-  qvtkConnect( this->mrmlScene(), vtkMRMLScene::NodeAboutToBeRemovedEvent, this, SLOT( onNodeAboutToBeRemoved(vtkObject*,vtkObject*) ) );
-
   // Set up tree view
-  qMRMLSceneSubjectHierarchyModel* sceneModel = (qMRMLSceneSubjectHierarchyModel*)d->SubjectHierarchyTreeView->sceneModel();
+  qMRMLSubjectHierarchyModel* sceneModel = (qMRMLSubjectHierarchyModel*)d->SubjectHierarchyTreeView->model();
   d->SubjectHierarchyTreeView->expandToDepth(4);
   d->SubjectHierarchyTreeView->setEditTriggers(QAbstractItemView::DoubleClicked | QAbstractItemView::EditKeyPressed);
   d->SubjectHierarchyTreeView->header()->resizeSection(sceneModel->transformColumn(), 60);
+  // Make subject hierarchy item info label text selectable
+  d->SubjectHierarchyItemInfoLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
-  connect( d->SubjectHierarchyTreeView->sceneModel(), SIGNAL(invalidateFilter()), d->SubjectHierarchyTreeView->model(), SLOT(invalidate()) );
-  connect( d->SubjectHierarchyTreeView, SIGNAL(currentNodeChanged(vtkMRMLNode*)), this, SLOT(setDataNodeFromSubjectHierarchyNode(vtkMRMLNode*)) );
-  connect( d->SubjectHierarchyTreeView, SIGNAL(currentNodeChanged(vtkMRMLNode*)), d->SubjectHierarchyNodeAttributeTableWidget, SLOT(setMRMLNode(vtkMRMLNode*)) );
+  connect(d->SubjectHierarchyTreeView, SIGNAL(currentItemChanged(vtkIdType)),
+    this, SLOT(setDataNodeFromSubjectHierarchyItem(vtkIdType)) );
+  connect(d->SubjectHierarchyTreeView, SIGNAL(currentItemChanged(vtkIdType)),
+    this, SLOT(setInfoLabelFromSubjectHierarchyItem(vtkIdType)) );
 
   this->setMRMLIDsVisible(d->DisplayMRMLIDsCheckBox->isChecked());
   this->setTransformsVisible(d->DisplayTransformsCheckBox->isChecked());
@@ -192,12 +167,17 @@ void qSlicerSubjectHierarchyModuleWidget::setup()
 }
 
 //-----------------------------------------------------------------------------
-void qSlicerSubjectHierarchyModuleWidget::updateWidgetFromMRML()
+void qSlicerSubjectHierarchyModuleWidget::setMRMLScene(vtkMRMLScene* scene)
 {
   Q_D(qSlicerSubjectHierarchyModuleWidget);
 
-  // Expand to depth 4
-  d->SubjectHierarchyTreeView->expandToDepth(4);
+  Superclass::setMRMLScene(scene);
+
+  // Set tree root item to be the new scene
+  if (scene)
+    {
+    d->SubjectHierarchyTreeView->setRootItem(d->SubjectHierarchyTreeView->subjectHierarchyNode()->GetSceneItemID());
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -205,7 +185,7 @@ void qSlicerSubjectHierarchyModuleWidget::setMRMLIDsVisible(bool visible)
 {
   Q_D(qSlicerSubjectHierarchyModuleWidget);
 
-  d->SubjectHierarchyTreeView->setColumnHidden(d->SubjectHierarchyTreeView->sceneModel()->idColumn(), !visible);
+  d->SubjectHierarchyTreeView->setColumnHidden(d->SubjectHierarchyTreeView->model()->idColumn(), !visible);
 
   d->DisplayMRMLIDsCheckBox->blockSignals(true);
   d->DisplayMRMLIDsCheckBox->setChecked(visible);
@@ -217,9 +197,9 @@ void qSlicerSubjectHierarchyModuleWidget::setTransformsVisible(bool visible)
 {
   Q_D(qSlicerSubjectHierarchyModuleWidget);
 
-  qMRMLSceneSubjectHierarchyModel* sceneModel = qobject_cast<qMRMLSceneSubjectHierarchyModel*>(d->SubjectHierarchyTreeView->sceneModel());
-  d->SubjectHierarchyTreeView->setColumnHidden(sceneModel->transformColumn(), !visible);
-  d->SubjectHierarchyTreeView->header()->resizeSection(sceneModel->transformColumn(), 60);
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(d->SubjectHierarchyTreeView->model());
+  d->SubjectHierarchyTreeView->setColumnHidden(model->transformColumn(), !visible);
+  d->SubjectHierarchyTreeView->header()->resizeSection(model->transformColumn(), 60);
 
   d->DisplayTransformsCheckBox->blockSignals(true);
   d->DisplayTransformsCheckBox->setChecked(visible);
@@ -227,21 +207,119 @@ void qSlicerSubjectHierarchyModuleWidget::setTransformsVisible(bool visible)
 }
 
 //-----------------------------------------------------------------------------
-void qSlicerSubjectHierarchyModuleWidget::setDataNodeFromSubjectHierarchyNode(vtkMRMLNode* node)
+void qSlicerSubjectHierarchyModuleWidget::setDataNodeFromSubjectHierarchyItem(vtkIdType itemID)
 {
   Q_D(qSlicerSubjectHierarchyModuleWidget);
 
-  vtkMRMLSubjectHierarchyNode* shNode = vtkMRMLSubjectHierarchyNode::SafeDownCast(node);
-  vtkMRMLNode* dataNode = (shNode ? shNode->GetAssociatedNode() : NULL);
-  d->DataNodeInspectorGroupBox->setVisible(dataNode!=NULL);
+  vtkMRMLSubjectHierarchyNode* shNode = d->SubjectHierarchyTreeView->subjectHierarchyNode();
+  if (!shNode)
+    {
+    qCritical() << Q_FUNC_INFO << ": Invalid subject hierarchy";
+    return;
+    }
+
+  vtkMRMLNode* dataNode = NULL;
+  if (itemID != vtkMRMLSubjectHierarchyNode::INVALID_ITEM_ID)
+    {
+    dataNode = shNode->GetItemDataNode(itemID);
+    }
+  d->DataNodeInspectorGroupBox->setVisible(dataNode);
   d->DataNodeAttributeTableWidget->setMRMLNode(dataNode);
 }
 
 //-----------------------------------------------------------------------------
-qMRMLSceneSubjectHierarchyModel* qSlicerSubjectHierarchyModuleWidget::subjectHierarchySceneModel()const
+void qSlicerSubjectHierarchyModuleWidget::setInfoLabelFromSubjectHierarchyItem(vtkIdType itemID)
+{
+  Q_D(qSlicerSubjectHierarchyModuleWidget);
+
+  vtkMRMLSubjectHierarchyNode* shNode = d->SubjectHierarchyTreeView->subjectHierarchyNode();
+  if (!shNode)
+    {
+    qCritical() << Q_FUNC_INFO << ": Invalid subject hierarchy";
+    return;
+    }
+
+  if (itemID != vtkMRMLSubjectHierarchyNode::INVALID_ITEM_ID)
+    {
+    std::stringstream infoStream;
+    shNode->PrintItem(itemID, infoStream, vtkIndent(0));
+    d->SubjectHierarchyItemInfoLabel->setText(QLatin1String(infoStream.str().c_str()));
+
+    // Connect node for updating info label
+    if (!shNode->HasObserver(vtkMRMLSubjectHierarchyNode::SubjectHierarchyItemModifiedEvent, d->CallBack))
+      {
+      shNode->AddObserver(vtkMRMLSubjectHierarchyNode::SubjectHierarchyItemModifiedEvent, d->CallBack, -10.0);
+      }
+    }
+  else
+    {
+    d->SubjectHierarchyItemInfoLabel->setText("No item selected");
+    }
+
+  // Store item ID in the label object
+  d->SubjectHierarchyItemInfoLabel->setProperty("itemID", itemID);
+}
+
+//-----------------------------------------------------------------------------
+void qSlicerSubjectHierarchyModuleWidget::onSubjectHierarchyItemEvent(
+  vtkObject* caller, unsigned long event, void* clientData, void* callData )
+{
+  vtkMRMLSubjectHierarchyNode* shNode = reinterpret_cast<vtkMRMLSubjectHierarchyNode*>(caller);
+  qSlicerSubjectHierarchyModuleWidget* widget = reinterpret_cast<qSlicerSubjectHierarchyModuleWidget*>(clientData);
+  if (!widget || !shNode)
+    {
+    qCritical() << Q_FUNC_INFO << ": Invalid event parameters";
+    return;
+    }
+
+  // Get item ID
+  vtkIdType itemID = vtkMRMLSubjectHierarchyNode::INVALID_ITEM_ID;
+  if (callData)
+    {
+    vtkIdType* itemIdPtr = reinterpret_cast<vtkIdType*>(callData);
+    if (itemIdPtr)
+      {
+      itemID = *itemIdPtr;
+      }
+    }
+
+  switch (event)
+    {
+    case vtkMRMLSubjectHierarchyNode::SubjectHierarchyItemModifiedEvent:
+      widget->onSubjectHierarchyItemModified(itemID);
+      break;
+    }
+}
+
+//------------------------------------------------------------------------------
+void qSlicerSubjectHierarchyModuleWidget::onSubjectHierarchyItemModified(vtkIdType itemID)
+{
+  Q_D(qSlicerSubjectHierarchyModuleWidget);
+
+  // Get displayed item's ID from label object
+  vtkIdType displayedItemID = d->SubjectHierarchyItemInfoLabel->property("itemID").toLongLong();
+
+  // Update label if the displayed item is the one that changed
+  if (displayedItemID == itemID && displayedItemID != vtkMRMLSubjectHierarchyNode::INVALID_ITEM_ID)
+    {
+    vtkMRMLSubjectHierarchyNode* shNode = d->SubjectHierarchyTreeView->subjectHierarchyNode();
+    if (!shNode)
+      {
+      qCritical() << Q_FUNC_INFO << ": Invalid subject hierarchy";
+      return;
+      }
+
+    std::stringstream infoStream;
+    shNode->PrintItem(itemID, infoStream, vtkIndent(0));
+    d->SubjectHierarchyItemInfoLabel->setText(QLatin1String(infoStream.str().c_str()));
+    }
+}
+
+//-----------------------------------------------------------------------------
+qMRMLSubjectHierarchyModel* qSlicerSubjectHierarchyModuleWidget::subjectHierarchySceneModel()const
 {
   Q_D(const qSlicerSubjectHierarchyModuleWidget);
 
-  qMRMLSceneSubjectHierarchyModel* sceneModel = qobject_cast<qMRMLSceneSubjectHierarchyModel*>(d->SubjectHierarchyTreeView->sceneModel());
-  return sceneModel;
+  qMRMLSubjectHierarchyModel* model = qobject_cast<qMRMLSubjectHierarchyModel*>(d->SubjectHierarchyTreeView->model());
+  return model;
 }

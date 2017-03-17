@@ -38,6 +38,8 @@
 #include <vtkObjectFactory.h>
 #include <vtkStringArray.h>
 #include <vtkVariant.h>
+#include <vtksys/SystemTools.hxx>
+#include <vtkDirectory.h>
 
 // STD includes
 #include <algorithm>
@@ -59,7 +61,7 @@ public:
   // on linux and mac), therefore we store a simple pointer and create/delete
   // the document object manually
   typedef std::map<std::string, rapidjson::Document* > TerminologyMap;
-  vtkInternal(vtkSlicerTerminologiesModuleLogic* external);
+  vtkInternal();
   ~vtkInternal();
 
   /// Utility function to get code in Json array
@@ -153,17 +155,13 @@ public:
 
   /// Loaded anatomical region contexts. Key is the context name, value is the root item.
   TerminologyMap LoadedAnatomicContexts;
-
-private:
-  vtkSlicerTerminologiesModuleLogic* External;
 };
 
 //---------------------------------------------------------------------------
 // vtkInternal methods
 
 //---------------------------------------------------------------------------
-vtkSlicerTerminologiesModuleLogic::vtkInternal::vtkInternal(vtkSlicerTerminologiesModuleLogic* external)
-: External(external)
+vtkSlicerTerminologiesModuleLogic::vtkInternal::vtkInternal()
 {
 }
 
@@ -985,8 +983,9 @@ void vtkSlicerTerminologiesModuleLogic::vtkInternal::GetJsonCodeFromIdentifier(
 
 //----------------------------------------------------------------------------
 vtkSlicerTerminologiesModuleLogic::vtkSlicerTerminologiesModuleLogic()
+  : UserTerminologiesPath(NULL)
 {
-  this->Internal = new vtkInternal(this);
+  this->Internal = new vtkInternal();
 }
 
 //----------------------------------------------------------------------------
@@ -994,6 +993,8 @@ vtkSlicerTerminologiesModuleLogic::~vtkSlicerTerminologiesModuleLogic()
 {
   delete this->Internal;
   this->Internal = NULL;
+
+  this->SetUserTerminologiesPath(NULL);
 }
 
 //----------------------------------------------------------------------------
@@ -1013,6 +1014,7 @@ void vtkSlicerTerminologiesModuleLogic::SetMRMLSceneInternal(vtkMRMLScene* newSc
   this->SetDisableModifiedEvent(true);
   this->LoadDefaultTerminologies();
   this->LoadDefaultAnatomicContexts();
+  this->LoadUserTerminologies();
   this->SetDisableModifiedEvent(wasModifying);
 }
 
@@ -1034,6 +1036,7 @@ std::string vtkSlicerTerminologiesModuleLogic::LoadTerminologyFromFile(std::stri
   if (terminologyRoot->ParseStream(fs).HasParseError())
     {
     vtkErrorMacro("LoadTerminologyFromFile: Failed to load terminology from file '" << filePath);
+    fclose(fp);
     return "";
     }
 
@@ -1041,7 +1044,7 @@ std::string vtkSlicerTerminologiesModuleLogic::LoadTerminologyFromFile(std::stri
   contextName = (*terminologyRoot)["SegmentationCategoryTypeContextName"].GetString();
   vtkSlicerTerminologiesModuleLogic::vtkInternal::SetDocumentInTerminologyMap(
     this->Internal->LoadedTerminologies, contextName, terminologyRoot);
-
+  fclose(fp);
   vtkInfoMacro("Terminology named '" << contextName << "' successfully loaded from file " << filePath);
   this->Modified();
   return contextName;
@@ -1063,6 +1066,7 @@ bool vtkSlicerTerminologiesModuleLogic::LoadTerminologyFromSegmentDescriptorFile
   if (descriptorDoc.ParseStream(fs).HasParseError())
     {
     vtkErrorMacro("LoadTerminologyFromSegmentDescriptorFile: Failed to load terminology from file '" << filePath);
+    fclose(fp);
     return false;
     }
 
@@ -1082,6 +1086,7 @@ bool vtkSlicerTerminologiesModuleLogic::LoadTerminologyFromSegmentDescriptorFile
   if (!success)
     {
     vtkErrorMacro("LoadTerminologyFromSegmentDescriptorFile: Failed to parse descriptor file '" << filePath);
+    fclose(fp);
     return false;
     }
 
@@ -1089,6 +1094,7 @@ bool vtkSlicerTerminologiesModuleLogic::LoadTerminologyFromSegmentDescriptorFile
   vtkSlicerTerminologiesModuleLogic::vtkInternal::SetDocumentInTerminologyMap(
     this->Internal->LoadedTerminologies, contextName, convertedDoc );
 
+  fclose(fp);
   vtkInfoMacro("Terminology named '" << contextName << "' successfully loaded from file " << filePath);
   this->Modified();
   return true;
@@ -1128,6 +1134,7 @@ std::string vtkSlicerTerminologiesModuleLogic::LoadAnatomicContextFromFile(std::
   if (anatomicContextRoot->ParseStream(fs).HasParseError())
     {
     vtkErrorMacro("LoadAnatomicContextFromFile: Failed to load terminology from file '" << filePath);
+    fclose(fp);
     return "";
     }
 
@@ -1136,6 +1143,7 @@ std::string vtkSlicerTerminologiesModuleLogic::LoadAnatomicContextFromFile(std::
   vtkSlicerTerminologiesModuleLogic::vtkInternal::SetDocumentInTerminologyMap(
     this->Internal->LoadedAnatomicContexts, contextName, anatomicContextRoot);
 
+  fclose(fp);
   vtkInfoMacro("Anatomic context named '" << contextName << "' successfully loaded from file " << filePath);
   return contextName;
 }
@@ -1156,6 +1164,7 @@ bool vtkSlicerTerminologiesModuleLogic::LoadAnatomicContextFromSegmentDescriptor
   if (descriptorDoc.ParseStream(fs).HasParseError())
     {
     vtkErrorMacro("LoadAnatomicContextFromSegmentDescriptorFile: Failed to load terminology from file '" << filePath);
+    fclose(fp);
     return false;
     }
 
@@ -1175,6 +1184,7 @@ bool vtkSlicerTerminologiesModuleLogic::LoadAnatomicContextFromSegmentDescriptor
   if (!success)
     {
     // Anatomic context is optional in descriptor file
+    fclose(fp);
     return false;
     }
 
@@ -1182,6 +1192,7 @@ bool vtkSlicerTerminologiesModuleLogic::LoadAnatomicContextFromSegmentDescriptor
   vtkSlicerTerminologiesModuleLogic::vtkInternal::SetDocumentInTerminologyMap(
     this->Internal->LoadedAnatomicContexts, contextName, convertedDoc );
 
+  fclose(fp);
   vtkInfoMacro("Anatomic context named '" << contextName << "' successfully loaded from file " << filePath);
   this->Modified();
   return true;
@@ -1198,6 +1209,45 @@ void vtkSlicerTerminologiesModuleLogic::LoadDefaultAnatomicContexts()
     }
 }
 
+//---------------------------------------------------------------------------
+void vtkSlicerTerminologiesModuleLogic::LoadUserTerminologies()
+{
+  if (!this->UserTerminologiesPath)
+    {
+    vtkErrorMacro("LoadUserTerminologies: User settings directory '"
+      << (this->UserTerminologiesPath ? this->UserTerminologiesPath : "None") << "' does not exist");
+    return;
+    }
+  if (!vtksys::SystemTools::FileExists(this->UserTerminologiesPath, false))
+    {
+    return;
+    }
+
+  // Try to load all json files in the user settings directory
+  vtkSmartPointer<vtkDirectory> userSettingsDir = vtkSmartPointer<vtkDirectory>::New();
+  userSettingsDir->Open(this->UserTerminologiesPath);
+  //vtkSmartPointer<vtkStringArray> files = vtkSmartPointer<vtkStringArray>::Take(userSettingsDir->GetFiles());
+  vtkStringArray* files = userSettingsDir->GetFiles();
+  for (int index=0; index<files->GetNumberOfValues(); ++index)
+    {
+    std::string fileName = files->GetValue(index);
+
+    // Only load json files
+    if ( userSettingsDir->FileIsDirectory(fileName.c_str())
+      || fileName.size() < 5 || fileName.substr(fileName.size()-5).compare(".json") )
+      {
+      continue;
+      }
+
+    // Try loading file
+    std::string jsonFilePath = std::string(this->UserTerminologiesPath) + "/" + fileName;
+    std::string success = this->LoadTerminologyFromFile(jsonFilePath);
+    if (success.empty())
+      {
+      vtkErrorMacro("LoadUserTerminologies: Failed to load terminology from file " << files->GetValue(index));
+      }
+    }
+}
 
 //---------------------------------------------------------------------------
 void vtkSlicerTerminologiesModuleLogic::GetLoadedTerminologyNames(std::vector<std::string> &terminologyNames)

@@ -16,8 +16,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __itkHFieldToDeformationFieldImageFilter_h
-#define __itkHFieldToDeformationFieldImageFilter_h
+#ifndef itkHFieldToDeformationFieldImageFilter_h
+#define itkHFieldToDeformationFieldImageFilter_h
 
 #include <itkImageToImageFilter.h>
 
@@ -82,10 +82,10 @@ public:
 protected:
   HFieldToDeformationFieldImageFilter()
   {
-  };
+  }
   virtual ~HFieldToDeformationFieldImageFilter()
   {
-  };
+  }
 private:
   HFieldToDeformationFieldImageFilter(const Self &); // purposely not implemented
   void operator=(const Self &);                      // purposely not implemented

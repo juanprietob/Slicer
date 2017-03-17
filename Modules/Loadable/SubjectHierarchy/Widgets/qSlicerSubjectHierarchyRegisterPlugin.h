@@ -29,9 +29,6 @@
 #include "qSlicerSubjectHierarchyModuleWidgetsExport.h"
 
 class qSlicerSubjectHierarchyRegisterPluginPrivate;
-class vtkMRMLNode;
-class vtkMRMLScalarVolumeNode;
-class vtkMRMLSubjectHierarchyNode;
 
 // Due to some reason the Python wrapping of this class fails, therefore
 // put everything between BTX/ETX to exclude from wrapping.
@@ -51,36 +48,39 @@ public:
   virtual ~qSlicerSubjectHierarchyRegisterPlugin();
 
 public:
-  /// Get node context menu item actions to add to tree view
-  Q_INVOKABLE virtual QList<QAction*> nodeContextMenuActions()const;
+  /// Get item context menu item actions to add to tree view
+  virtual QList<QAction*> itemContextMenuActions()const;
 
-  /// Show context menu actions valid for  given subject hierarchy node.
-  /// \param node Subject Hierarchy node to show the context menu items for. If NULL, then shows menu items for the scene
-  virtual void showContextMenuActionsForNode(vtkMRMLSubjectHierarchyNode* node);
+  /// Show context menu actions valid for a given subject hierarchy item.
+  /// \param itemID Subject Hierarchy item to show the context menu items for
+  virtual void showContextMenuActionsForItem(vtkIdType itemID);
 
 protected slots:
-  /// Start registration process by selecting the current node as the 'from' node.
-  /// Saves node in \sa m_RegisterFromNode and shows "Register * to this using..."
+  /// Start registration process by selecting the current item as the 'from' item.
+  /// Saves item in \sa m_RegisterFromItem and shows "Register * to this using..."
   /// context menu option offering the possible registration methods,
-  void registerCurrentNodeTo();
+  void registerCurrentItemTo();
 
-  /// Register saved 'from' node to current node using image based rigid registration.
+  /// Register saved 'from' item to current item using image based rigid registration.
   /// (Switch to registration module corresponding to selected method, set chosen
-  /// input nodes, offer a best guess parameter set based on modalities etc.)
+  /// input items, offer a best guess parameter set based on modalities etc.)
   void registerImageBasedRigid();
 
-  /// Register saved 'from' node to current node using image based BSpline registration
+  /// Register saved 'from' item to current item using image based BSpline registration
   /// (Switch to registration module corresponding to selected method, set chosen
-  /// input nodes, offer a best guess parameter set based on modalities etc.)
+  /// input items, offer a best guess parameter set based on modalities etc.)
   void registerImageBasedBSpline();
 
-  /// Register saved 'from' node to current node using interactive landmark registration
+  /// Register saved 'from' item to current item using interactive landmark registration
   /// (Switch to registration module corresponding to selected method, set chosen
-  /// input nodes, offer a best guess parameter set based on modalities etc.)
+  /// input items, offer a best guess parameter set based on modalities etc.)
   void registerInteractiveLandmark();
 
+  /// Cancel registration (un-select first volume)
+  void cancel();
+
 protected:
-  vtkMRMLSubjectHierarchyNode* m_RegisterFromNode;
+  vtkIdType m_RegisterFromItem;
 
 protected:
   QScopedPointer<qSlicerSubjectHierarchyRegisterPluginPrivate> d_ptr;

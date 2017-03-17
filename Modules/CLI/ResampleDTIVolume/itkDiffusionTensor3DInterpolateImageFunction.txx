@@ -11,8 +11,8 @@
   See License.txt or http://www.slicer.org/copyright/copyright.txt for details.
 
 ==========================================================================*/
-#ifndef __itkDiffusionTensor3DInterpolateImageFunction_txx
-#define __itkDiffusionTensor3DInterpolateImageFunction_txx
+#ifndef itkDiffusionTensor3DInterpolateImageFunction_txx
+#define itkDiffusionTensor3DInterpolateImageFunction_txx
 
 #include "itkDiffusionTensor3DInterpolateImageFunction.h"
 
@@ -24,7 +24,7 @@ DiffusionTensor3DInterpolateImageFunction<TData, TCoordRep>
 ::DiffusionTensor3DInterpolateImageFunction()
 {
 //  m_InputImage = 0 ;
-  latestTime = 0;
+  m_LatestTime = 0;
 //  SetDefaultPixelValue( ITK_DIFFUSION_TENSOR_3D_ZERO ) ;
 }
 
